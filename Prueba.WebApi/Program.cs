@@ -18,12 +18,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
 
-// Registrar validators manualmente (sin extensión)
+// Registrar validator manualmente (sin extensión AddValidatorsFromAssemblyContaining)
 builder.Services.AddScoped<FluentValidation.IValidator<Prueba.Application.Orders.CreateOrder.CreateOrderCommand>,
     Prueba.Application.Orders.CreateOrder.CreateOrderCommandValidator>();
-
 
 // MediatR
 builder.Services.AddMediatR(cfg =>
@@ -86,8 +86,13 @@ app.UseExceptionHandler(errApp =>
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
 app.UseCors("Default");
+
+// ✅ FIX: NO redireccionar a HTTPS en Development (para que la Web no falle)
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.MapControllers();
 

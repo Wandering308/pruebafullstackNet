@@ -1,14 +1,14 @@
 namespace Prueba.Application.Orders;
 
+public sealed record GeoPointDto(double Latitude, double Longitude);
+
 public sealed record OrderDto(
     Guid Id,
     string Customer,
     string Product,
     int Quantity,
-    double OriginLat,
-    double OriginLon,
-    double DestinationLat,
-    double DestinationLon,
+    GeoPointDto Origin,
+    GeoPointDto Destination,
     double DistanceKm,
     double CostUsd
 );

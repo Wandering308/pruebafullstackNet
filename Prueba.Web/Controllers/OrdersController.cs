@@ -1,48 +1,45 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Prueba.Web.Models;
+using System.Net.Http.Json;
 
 namespace Prueba.Web.Controllers;
 
 public sealed class OrdersController : Controller
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+    private readonly HttpClient _http;
 
-    public OrdersController(IHttpClientFactory httpClientFactory) => _httpClientFactory = httpClientFactory;
+    public OrdersController(HttpClient http)
+    {
+        _http = http;
+    }
 
     [HttpGet]
-    public IActionResult Index() => View(new OrdersByCustomerVm());
-
-    [HttpPost]
-    public async Task<IActionResult> Index(OrdersByCustomerVm vm)
+    public async Task<IActionResult> Index(string? customer)
     {
-        if (string.IsNullOrWhiteSpace(vm.Customer))
+        var vm = new OrdersByCustomerVm
         {
-            vm.Error = "Customer is required.";
-            return View(vm);
-        }
+            Customer = customer ?? ""
+        };
 
-        var client = _httpClientFactory.CreateClient("Api");
+        if (string.IsNullOrWhiteSpace(customer))
+            return View(vm);
 
         try
         {
-            var resp = await client.GetAsync($"/api/orders?customer={Uri.EscapeDataString(vm.Customer)}");
+            var url = $"api/Orders?customer={Uri.EscapeDataString(customer)}";
+            var data = await _http.GetFromJsonAsync<List<OrderDto>>(url);
 
-            if (!resp.IsSuccessStatusCode)
-            {
-                vm.Error = $"API error: {(int)resp.StatusCode} {resp.ReasonPhrase}";
-                return View(vm);
-            }
-
-            var json = await resp.Content.ReadAsStringAsync();
-            vm.Orders = JsonSerializer.Deserialize<List<OrderVm>>(json, _jsonOpts) ?? new();
-            return View(vm);
+            vm.Orders = data ?? new List<OrderDto>();
+        }
+        catch (HttpRequestException ex)
+        {
+            vm.Error = $"API error: {ex.Message}";
         }
         catch (Exception ex)
         {
-            vm.Error = ex.Message;
-            return View(vm);
+            vm.Error = $"Unexpected error: {ex.Message}";
         }
+
+        return View(vm);
     }
 }

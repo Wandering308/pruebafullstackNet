@@ -1,51 +1,83 @@
 @model Prueba.Web.Models.OrdersByCustomerVm
-
-<h2>Orders by Customer</h2>
-
-<form method="post" class="mb-3">
-    <label>Customer</label>
-    <input name="Customer" value="@Model.Customer" class="form-control" />
-    <button type="submit" class="btn btn-primary mt-2">Search</button>
-</form>
-
-<div class="mb-3">
-    <a class="btn btn-secondary" href="/Reports/CustomerIntervals">View Customer Interval Report</a>
-</div>
-
-@if (!string.IsNullOrWhiteSpace(Model.Error))
-{
-    <div class="alert alert-danger">@Model.Error</div>
+@{
+    ViewData["Title"] = "Orders by Customer";
 }
 
-@if (Model.Orders?.Any() == true)
-{
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            <th>Product</th>
-            <th>Qty</th>
-            <th>Origin</th>
-            <th>Destination</th>
-            <th>DistanceKm</th>
-            <th>CostUsd</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var o in Model.Orders)
+<div class="row">
+    <div class="col-lg-10 col-xl-9">
+
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h1 class="h3 m-0">Orders by Customer</h1>
+            <a class="btn btn-outline-secondary" href="/Reports/CustomerIntervals">
+                View Customer Interval Report
+            </a>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <form method="get" class="row g-2 align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label">Customer</label>
+                        <input class="form-control" name="customer" value="@Model.Customer" placeholder="Camilo, felipe, ..." />
+                    </div>
+                    <div class="col-md-auto">
+                        <button class="btn btn-primary" type="submit">Search</button>
+                    </div>
+                </form>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Error))
+                {
+                    <div class="alert alert-danger mt-3 mb-0">
+                        <strong>API error:</strong> @Model.Error
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (Model.Orders == null || Model.Orders.Count == 0)
         {
-            <tr>
-                <td>@o.Product</td>
-                <td>@o.Quantity</td>
-                <td>@o.OriginLat, @o.OriginLon</td>
-                <td>@o.DestinationLat, @o.DestinationLon</td>
-                <td>@o.DistanceKm</td>
-                <td>@o.CostUsd</td>
-            </tr>
+            <div class="alert alert-info">
+                No orders found.
+            </div>
         }
-        </tbody>
-    </table>
-}
-else if (!string.IsNullOrWhiteSpace(Model.Customer))
-{
-    <div class="alert alert-info">No orders found.</div>
-}
+        else
+        {
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered align-middle mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Id</th>
+                                    <th>Customer</th>
+                                    <th>Product</th>
+                                    <th class="text-end">Qty</th>
+                                    <th>Origin</th>
+                                    <th>Destination</th>
+                                    <th class="text-end">DistanceKm</th>
+                                    <th class="text-end">CostUsd</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var o in Model.Orders)
+                                {
+                                    <tr>
+                                        <td class="small">@o.Id</td>
+                                        <td>@o.Customer</td>
+                                        <td>@o.Product</td>
+                                        <td class="text-end">@o.Quantity</td>
+                                        <td>@($"{o.Origin.Latitude}, {o.Origin.Longitude}")</td>
+                                        <td>@($"{o.Destination.Latitude}, {o.Destination.Longitude}")</td>
+                                        <td class="text-end">@o.DistanceKm.ToString("0.####")</td>
+                                        <td class="text-end">@o.CostUsd.ToString("0.##")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+</div>

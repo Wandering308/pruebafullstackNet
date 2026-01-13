@@ -2,48 +2,37 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Prueba.Web.Controllers;
 
-public class ReportsController : Controller
+public sealed class ReportsController : Controller
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly HttpClient _http;
 
-    public ReportsController(IHttpClientFactory httpClientFactory)
+    public ReportsController(HttpClient http)
     {
-        _httpClientFactory = httpClientFactory;
+        _http = http;
     }
 
-    // Pantalla del reporte
     [HttpGet]
     public IActionResult CustomerIntervals()
     {
         return View();
     }
 
-    // Descarga Excel (la Web baja desde la API y devuelve el archivo)
+    // Descarga desde la API y lo devuelve como archivo al browser
     [HttpGet]
     public async Task<IActionResult> CustomerIntervalsExcel(CancellationToken ct)
     {
-        var client = _httpClientFactory.CreateClient("Api");
-
-        // Endpoint REAL vive en la API:
-        // http://localhost:5000/api/Reports/customer-intervals/excel
-        var resp = await client.GetAsync("api/Reports/customer-intervals/excel", ct);
-
+        var resp = await _http.GetAsync("api/Reports/customer-intervals/excel", ct);
         if (!resp.IsSuccessStatusCode)
         {
-            var msg = $"API error: {(int)resp.StatusCode} {resp.ReasonPhrase}";
-            return Content(msg);
+            return Content($"API error: {(int)resp.StatusCode} {resp.ReasonPhrase}");
         }
 
         var bytes = await resp.Content.ReadAsByteArrayAsync(ct);
-
-        var contentType =
-            resp.Content.Headers.ContentType?.ToString()
+        var contentType = resp.Content.Headers.ContentType?.ToString()
             ?? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-        var fileName =
-            resp.Content.Headers.ContentDisposition?.FileNameStar
-            ?? resp.Content.Headers.ContentDisposition?.FileName?.Trim('"')
-            ?? $"customer-intervals.xlsx";
+        var fileName = resp.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? $"customer-intervals-{DateTime.UtcNow:yyyyMMdd-HHmmss}.xlsx";
 
         return File(bytes, contentType, fileName);
     }
