@@ -1,0 +1,51 @@
+@model Prueba.Web.Models.OrdersByCustomerVm
+
+<h2>Orders by Customer</h2>
+
+<form method="post" class="mb-3">
+    <label>Customer</label>
+    <input name="Customer" value="@Model.Customer" class="form-control" />
+    <button type="submit" class="btn btn-primary mt-2">Search</button>
+</form>
+
+<div class="mb-3">
+    <a class="btn btn-secondary" href="/Reports/CustomerIntervals">View Customer Interval Report</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+@if (Model.Orders?.Any() == true)
+{
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Origin</th>
+            <th>Destination</th>
+            <th>DistanceKm</th>
+            <th>CostUsd</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var o in Model.Orders)
+        {
+            <tr>
+                <td>@o.Product</td>
+                <td>@o.Quantity</td>
+                <td>@o.OriginLat, @o.OriginLon</td>
+                <td>@o.DestinationLat, @o.DestinationLon</td>
+                <td>@o.DistanceKm</td>
+                <td>@o.CostUsd</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+else if (!string.IsNullOrWhiteSpace(Model.Customer))
+{
+    <div class="alert alert-info">No orders found.</div>
+}

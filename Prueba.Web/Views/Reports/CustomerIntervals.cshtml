@@ -1,0 +1,45 @@
+@model List<Prueba.Web.Models.CustomerIntervalsReportVm>
+
+<h2>Customer Interval Report</h2>
+
+<div class="mb-3">
+    <a class="btn btn-success" href="/Reports/CustomerIntervalsExcel">Download Excel</a>
+</div>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
+
+@if (Model.Any())
+{
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Customer</th>
+            <th>1-50</th>
+            <th>51-200</th>
+            <th>201-500</th>
+            <th>501-1000</th>
+            <th>Total</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td>@r.Customer</td>
+                <td>@r.Orders_1_50</td>
+                <td>@r.Orders_51_200</td>
+                <td>@r.Orders_201_500</td>
+                <td>@r.Orders_501_1000</td>
+                <td>@r.Total</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-info">No data.</div>
+}
