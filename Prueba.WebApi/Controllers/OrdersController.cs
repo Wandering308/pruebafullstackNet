@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Prueba.Application.Orders.CreateOrder;
 using Prueba.Domain.Interfaces;
@@ -9,12 +10,12 @@ namespace Prueba.WebApi.Controllers;
 [Route("api/[controller]")]
 public sealed class OrdersController : ControllerBase
 {
-    private readonly CreateOrderService _createOrder;
+    private readonly IMediator _mediator;
     private readonly IOrderRepository _orders;
 
-    public OrdersController(CreateOrderService createOrder, IOrderRepository orders)
+    public OrdersController(IMediator mediator, IOrderRepository orders)
     {
-        _createOrder = createOrder;
+        _mediator = mediator;
         _orders = orders;
     }
 
@@ -34,34 +35,22 @@ public sealed class OrdersController : ControllerBase
             request.DestinationLon
         );
 
-        var result = await _createOrder.ExecuteAsync(cmd, ct);
+        var result = await _mediator.Send(cmd, ct);
+
+        // mantiene el mismo Location que ya venías usando
         return CreatedAtAction(nameof(GetByCustomer), new { customer = result.Customer }, result);
     }
 
-    // GET: /api/orders?customer=Juan
+    // GET: /api/orders?customer=Felipe
     [HttpGet]
-    public async Task<IActionResult> GetByCustomer([FromQuery] string customer, CancellationToken ct)
+    public async Task<IActionResult> GetByCustomer(
+        [FromQuery] string customer,
+        CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(customer))
             return BadRequest(new { error = "customer is required" });
 
         var list = await _orders.GetByCustomerAsync(customer, ct);
-
-        // Para la consulta: cliente, producto, coords, distancia, costo (todo lo que piden ver)
-        var response = list.Select(o => new
-        {
-            o.Id,
-            o.Customer,
-            o.Product,
-            o.Quantity,
-            OriginLat = o.Origin.Latitude,
-            OriginLon = o.Origin.Longitude,
-            DestinationLat = o.Destination.Latitude,
-            DestinationLon = o.Destination.Longitude,
-            o.DistanceKm,
-            o.CostUsd
-        });
-
-        return Ok(response);
+        return Ok(list);
     }
 }

@@ -2,7 +2,7 @@ using Prueba.Domain.ValueObjects;
 
 namespace Prueba.Domain.Entities;
 
-public class Order
+public sealed class Order
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
 
@@ -16,9 +16,9 @@ public class Order
     public double DistanceKm { get; private set; }
     public double CostUsd { get; private set; }
 
-    private Order() { } // EF
+    private Order() { } // EF Core
 
-    public Order(
+    private Order(
         string customer,
         string product,
         int quantity,
@@ -34,5 +34,34 @@ public class Order
         Destination = destination;
         DistanceKm = distanceKm;
         CostUsd = costUsd;
+    }
+
+    public static Order Create(
+        string customer,
+        string product,
+        int quantity,
+        GeoPoint origin,
+        GeoPoint destination,
+        double distanceKm,
+        double costUsd)
+    {
+        if (string.IsNullOrWhiteSpace(customer))
+            throw new ArgumentException("Customer is required", nameof(customer));
+
+        if (string.IsNullOrWhiteSpace(product))
+            throw new ArgumentException("Product is required", nameof(product));
+
+        if (quantity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than 0.");
+
+        return new Order(
+            customer.Trim(),
+            product.Trim(),
+            quantity,
+            origin,
+            destination,
+            distanceKm,
+            costUsd
+        );
     }
 }

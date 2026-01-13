@@ -1,5 +1,6 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using MediatR;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Prueba.Application.Orders.CreateOrder;
@@ -8,26 +9,24 @@ using Prueba.Domain.Services;
 using Prueba.Infrastructure.Persistence;
 using Prueba.Infrastructure.Repositories;
 
-using Prueba.Application.Reports.CustomerIntervals;
-
 var builder = WebApplication.CreateBuilder(args);
 
-
-builder.Services.AddScoped<CustomerIntervalsReportService>();
-
-
-// ---------- MVC / Controllers ----------
+// ---------- Controllers ----------
 builder.Services.AddControllers();
 
 // ---------- Swagger ----------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ---------- Validation (FluentValidation) ----------
+// ---------- FluentValidation ----------
 builder.Services.AddFluentValidationAutoValidation();
+// Registra validators del assembly Application (donde está CreateOrderHandler/Command)
+builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderHandler>();
 
-// (Si luego creamos validators, se registran aquí automáticamente si están en el assembly)
-builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderService>();
+// ---------- MediatR (CQRS) ----------
+// IMPORTANT: registrar desde el handler, NO desde CreateOrderService
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssemblyContaining<CreateOrderHandler>());
 
 // ---------- DB (SQL Server) ----------
 builder.Services.AddDbContext<AppDbContext>(opt =>
@@ -35,18 +34,17 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
 });
 
-// ---------- DI (Clean Architecture) ----------
+// ---------- Repositories ----------
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
+// ---------- Domain services ----------
 builder.Services.AddScoped<IDistanceCalculator, HaversineDistanceCalculator>();
 builder.Services.AddScoped<ICostCalculator, IntervalCostCalculator>();
 
-builder.Services.AddScoped<CreateOrderService>();
-
-// ---------- Health checks (útil para demo) ----------
+// ---------- Health checks ----------
 builder.Services.AddHealthChecks();
 
-// ---------- CORS (opcional; útil si luego la Web consume la API desde otro host) ----------
+// ---------- CORS ----------
 builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("Default", p =>
@@ -57,7 +55,7 @@ builder.Services.AddCors(opt =>
 
 var app = builder.Build();
 
-// ---------- Global error handler (simple y limpio) ----------
+// ---------- Global error handler ----------
 app.UseExceptionHandler(errApp =>
 {
     errApp.Run(async context =>
@@ -67,18 +65,13 @@ app.UseExceptionHandler(errApp =>
 
         context.Response.ContentType = "application/json";
 
-        // Validaciones / reglas
         if (ex is ArgumentOutOfRangeException or ArgumentException)
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await context.Response.WriteAsJsonAsync(new
-            {
-                error = ex.Message
-            });
+            await context.Response.WriteAsJsonAsync(new { error = ex.Message });
             return;
         }
 
-        // Default
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         await context.Response.WriteAsJsonAsync(new
         {
@@ -92,11 +85,9 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
-
 app.UseCors("Default");
 
 app.MapHealthChecks("/health");
-
 app.MapControllers();
 
 app.Run();
