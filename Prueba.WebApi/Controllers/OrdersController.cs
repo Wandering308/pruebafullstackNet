@@ -1,9 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Prueba.Application.Orders.CreateOrder;
-using Prueba.Domain.Interfaces;
-using Prueba.WebApi.Contracts;
 using Prueba.Application.Orders.GetOrdersByCustomer;
+using Prueba.WebApi.Contracts;
 
 namespace Prueba.WebApi.Controllers;
 
@@ -12,16 +11,16 @@ namespace Prueba.WebApi.Controllers;
 public sealed class OrdersController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IOrderRepository _orders;
 
-    public OrdersController(IMediator mediator, IOrderRepository orders)
+    public OrdersController(IMediator mediator)
     {
         _mediator = mediator;
-        _orders = orders;
     }
 
     // POST: /api/orders
     [HttpPost]
+    [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CreateOrderResult>> Create(
         [FromBody] CreateOrderRequest request,
         CancellationToken ct)
@@ -38,17 +37,16 @@ public sealed class OrdersController : ControllerBase
 
         var result = await _mediator.Send(cmd, ct);
 
-        // mantiene el mismo Location que ya venías usando
-        return CreatedAtAction(nameof(GetByCustomer), new { customer = result.Customer }, result);
+        // 201 Created + body (sin forzar un Get que no corresponde a un recurso único)
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 
     // GET: /api/orders?customer=Felipe
     [HttpGet]
-    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByCustomer([FromQuery] string customer, CancellationToken ct)
     {
         var result = await _mediator.Send(new GetOrdersByCustomerQuery(customer), ct);
         return Ok(result);
     }
-
 }
