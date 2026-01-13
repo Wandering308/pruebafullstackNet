@@ -5,7 +5,6 @@ using Prueba.Application.Reports.CustomerIntervals;
 namespace Prueba.WebApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
 public sealed class ReportsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -15,8 +14,9 @@ public sealed class ReportsController : ControllerBase
         _mediator = mediator;
     }
 
+    // Ruta ABSOLUTA y explícita (no depende del nombre del controller)
     // GET: /api/reports/customer-intervals/excel
-    [HttpGet("customer-intervals/excel")]
+    [HttpGet("/api/reports/customer-intervals/excel")]
     public async Task<IActionResult> CustomerIntervalsExcel(CancellationToken ct)
     {
         var file = await _mediator.Send(new CustomerIntervalsReportExcelQuery(), ct);

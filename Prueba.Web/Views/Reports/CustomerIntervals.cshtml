@@ -7,7 +7,7 @@
 
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h1 class="h3 m-0">Customer Interval Report</h1>
-            <a class="btn btn-outline-secondary" href="/Orders">Back to Orders</a>
+            <a class="btn btn-outline-secondary" asp-controller="Orders" asp-action="Index">Back to Orders</a>
         </div>
 
         <div class="card shadow-sm">
@@ -17,7 +17,8 @@
                 </p>
 
                 <a class="btn btn-success"
-                   href="/Reports/CustomerIntervals/Excel">
+                   asp-controller="Reports"
+                   asp-action="CustomerIntervalsExcel">
                     Download Excel
                 </a>
             </div>
