@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Prueba.Application.Orders.CreateOrder;
 using Prueba.Domain.Interfaces;
 using Prueba.WebApi.Contracts;
+using Prueba.Application.Orders.GetOrdersByCustomer;
 
 namespace Prueba.WebApi.Controllers;
 
@@ -43,14 +44,11 @@ public sealed class OrdersController : ControllerBase
 
     // GET: /api/orders?customer=Felipe
     [HttpGet]
-    public async Task<IActionResult> GetByCustomer(
-        [FromQuery] string customer,
-        CancellationToken ct)
+    [HttpGet]
+    public async Task<IActionResult> GetByCustomer([FromQuery] string customer, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(customer))
-            return BadRequest(new { error = "customer is required" });
-
-        var list = await _orders.GetByCustomerAsync(customer, ct);
-        return Ok(list);
+        var result = await _mediator.Send(new GetOrdersByCustomerQuery(customer), ct);
+        return Ok(result);
     }
+
 }
