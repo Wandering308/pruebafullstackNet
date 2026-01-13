@@ -2,11 +2,9 @@ namespace Prueba.Application.Reports.CustomerIntervals;
 
 public sealed record CustomerIntervalsReportDto(
     string Customer,
-    int Orders_1_50,
-    int Orders_51_200,
-    int Orders_201_500,
-    int Orders_501_1000
-)
-{
-    public int Total => Orders_1_50 + Orders_51_200 + Orders_201_500 + Orders_501_1000;
-}
+    int From1To50,
+    int From51To200,
+    int From201To500,
+    int From501To1000,
+    int Total
+);

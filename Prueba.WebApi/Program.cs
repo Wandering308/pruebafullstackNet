@@ -8,11 +8,16 @@ using Prueba.Domain.Interfaces;
 using Prueba.Domain.Services;
 using Prueba.Infrastructure.Persistence;
 using Prueba.Infrastructure.Repositories;
+using Prueba.Application.Reports.CustomerIntervals;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------- Controllers ----------
 builder.Services.AddControllers();
+
+builder.Services.AddScoped<CustomerIntervalsReportService>();
+builder.Services.AddScoped<CustomerIntervalsExcelExporter>();
+
 
 // ---------- AutoMapper (AutoMapper 16) ----------
 builder.Services.AddAutoMapper(cfg =>

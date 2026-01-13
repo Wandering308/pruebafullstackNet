@@ -4,35 +4,38 @@ namespace Prueba.Application.Reports.CustomerIntervals;
 
 public sealed class CustomerIntervalsReportService
 {
-    private readonly IOrderRepository _orders;
+    private readonly IOrderRepository _repo;
 
-    public CustomerIntervalsReportService(IOrderRepository orders) => _orders = orders;
+    public CustomerIntervalsReportService(IOrderRepository repo)
+        => _repo = repo;
 
-    public async Task<IReadOnlyList<CustomerIntervalsReportDto>> ExecuteAsync(CancellationToken ct = default)
+    public async Task<CustomerIntervalsResults> GenerateAsync(CancellationToken ct = default)
     {
-        var all = await _orders.GetAllAsync(ct);
+        var orders = await _repo.GetAllAsync(ct);
 
-        var report = all
+        var rows = orders
             .GroupBy(o => o.Customer)
             .Select(g =>
             {
-                int c1 = 0, c2 = 0, c3 = 0, c4 = 0;
+                var from1to50 = g.Count(o => o.DistanceKm >= 1 && o.DistanceKm <= 50);
+                var from51to200 = g.Count(o => o.DistanceKm >= 51 && o.DistanceKm <= 200);
+                var from201to500 = g.Count(o => o.DistanceKm >= 201 && o.DistanceKm <= 500);
+                var from501to1000 = g.Count(o => o.DistanceKm >= 501 && o.DistanceKm <= 1000);
 
-                foreach (var o in g)
-                {
-                    var d = o.DistanceKm;
+                var total = from1to50 + from51to200 + from201to500 + from501to1000;
 
-                    if (d <= 50) c1++;
-                    else if (d <= 200) c2++;
-                    else if (d <= 500) c3++;
-                    else c4++; // 501..1000
-                }
-
-                return new CustomerIntervalsReportDto(g.Key, c1, c2, c3, c4);
+                return new CustomerIntervalsReportDto(
+                    g.Key,
+                    from1to50,
+                    from51to200,
+                    from201to500,
+                    from501to1000,
+                    total
+                );
             })
             .OrderBy(x => x.Customer)
             .ToList();
 
-        return report;
+        return new CustomerIntervalsResults(rows);
     }
 }
