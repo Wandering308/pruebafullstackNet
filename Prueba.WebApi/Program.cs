@@ -9,12 +9,17 @@ using Prueba.Domain.Services;
 using Prueba.Infrastructure.Persistence;
 using Prueba.Infrastructure.Repositories;
 
-
-
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------- Controllers ----------
 builder.Services.AddControllers();
+
+// ---------- AutoMapper (AutoMapper 16) ----------
+builder.Services.AddAutoMapper(cfg =>
+{
+    // Escanea profiles del assembly Application
+    cfg.AddMaps(typeof(Prueba.Application.Orders.OrderMappingProfile).Assembly);
+}, typeof(Prueba.Application.Orders.OrderMappingProfile).Assembly);
 
 // ---------- Swagger ----------
 builder.Services.AddEndpointsApiExplorer();
@@ -22,14 +27,12 @@ builder.Services.AddSwaggerGen();
 
 // ---------- FluentValidation ----------
 builder.Services.AddFluentValidationAutoValidation();
-// Registra validators del assembly Application (donde está CreateOrderHandler/Command)
+// Asegura el scan de validators en Application
 builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderHandler>();
 
 // ---------- MediatR (CQRS) ----------
-// IMPORTANT: registrar desde el handler, NO desde CreateOrderService
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<CreateOrderHandler>());
-
 
 // ---------- DB (SQL Server) ----------
 builder.Services.AddDbContext<AppDbContext>(opt =>
