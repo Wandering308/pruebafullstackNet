@@ -13,15 +13,20 @@ public sealed class OrderRepository : IOrderRepository
 
     public async Task AddAsync(Order order, CancellationToken ct = default)
     {
-        _db.Orders.Add(order);
+        await _db.Orders.AddAsync(order, ct);
         await _db.SaveChangesAsync(ct);
     }
 
     public async Task<IReadOnlyList<Order>> GetByCustomerAsync(string customer, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(customer))
+            return Array.Empty<Order>();
+
+        var normalized = customer.Trim();
+
         return await _db.Orders
             .AsNoTracking()
-            .Where(o => o.Customer == customer)
+            .Where(o => o.Customer == normalized)
             .OrderByDescending(o => o.Id)
             .ToListAsync(ct);
     }
@@ -30,7 +35,7 @@ public sealed class OrderRepository : IOrderRepository
     {
         return await _db.Orders
             .AsNoTracking()
+            .OrderByDescending(o => o.Id)
             .ToListAsync(ct);
     }
-
 }

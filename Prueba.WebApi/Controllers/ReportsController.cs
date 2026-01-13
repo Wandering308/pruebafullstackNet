@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Prueba.Application.Reports.CustomerIntervals;
 
@@ -7,29 +8,18 @@ namespace Prueba.WebApi.Controllers;
 [Route("api/[controller]")]
 public sealed class ReportsController : ControllerBase
 {
-    private readonly CustomerIntervalsReportService _service;
+    private readonly IMediator _mediator;
 
-    public ReportsController(CustomerIntervalsReportService service) => _service = service;
-
-    // GET: /api/reports/customer-intervals
-    [HttpGet("customer-intervals")]
-    public async Task<IActionResult> CustomerIntervals(CancellationToken ct)
+    public ReportsController(IMediator mediator)
     {
-        var data = await _service.ExecuteAsync(ct);
-        return Ok(data);
+        _mediator = mediator;
     }
 
     // GET: /api/reports/customer-intervals/excel
     [HttpGet("customer-intervals/excel")]
     public async Task<IActionResult> CustomerIntervalsExcel(CancellationToken ct)
     {
-        var data = await _service.ExecuteAsync(ct);
-        var bytes = CustomerIntervalsExcelExporter.Export(data);
-
-        return File(
-            bytes,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "customer-intervals-report.xlsx"
-        );
+        var file = await _mediator.Send(new CustomerIntervalsReportExcelQuery(), ct);
+        return File(file.Content, file.ContentType, file.FileName);
     }
 }
