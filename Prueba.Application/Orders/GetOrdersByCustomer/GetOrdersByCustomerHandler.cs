@@ -1,41 +1,30 @@
+using AutoMapper;
 using MediatR;
-using Prueba.Application.Orders;
 using Prueba.Domain.Interfaces;
 
 namespace Prueba.Application.Orders.GetOrdersByCustomer;
 
 public sealed class GetOrdersByCustomerHandler
-    : IRequestHandler<GetOrdersByCustomerQuery, IReadOnlyList<OrderDto>>
+    : IRequestHandler<GetOrdersByCustomerQuery, IReadOnlyList<Prueba.Application.Orders.OrderDto>>
 {
     private readonly IOrderRepository _repo;
+    private readonly IMapper _mapper;
 
-    public GetOrdersByCustomerHandler(IOrderRepository repo)
+    public GetOrdersByCustomerHandler(IOrderRepository repo, IMapper mapper)
     {
         _repo = repo;
+        _mapper = mapper;
     }
 
-    public async Task<IReadOnlyList<OrderDto>> Handle(GetOrdersByCustomerQuery request, CancellationToken ct)
+    public async Task<IReadOnlyList<Prueba.Application.Orders.OrderDto>> Handle(GetOrdersByCustomerQuery request, CancellationToken ct)
     {
         var customer = (request.Customer ?? "").Trim();
-
         if (string.IsNullOrWhiteSpace(customer))
-            return Array.Empty<OrderDto>();
+            return Array.Empty<Prueba.Application.Orders.OrderDto>();
 
         var orders = await _repo.GetByCustomerAsync(customer, ct);
 
-        return orders
-            .Select(o => new OrderDto(
-                o.Id,
-                o.Customer,
-                o.Product,
-                o.Quantity,
-                o.Origin.Latitude,
-                o.Origin.Longitude,
-                o.Destination.Latitude,
-                o.Destination.Longitude,
-                o.DistanceKm,
-                o.CostUsd
-            ))
-            .ToList();
+        // Mapea lista completa usando AutoMapper
+        return orders.Select(o => _mapper.Map<Prueba.Application.Orders.OrderDto>(o)).ToList();
     }
 }
