@@ -1,61 +1,52 @@
-using FluentValidation;
 using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Prueba.Application.Orders.CreateOrder;
+using Prueba.Application.Reports.CustomerIntervals;
 using Prueba.Domain.Interfaces;
 using Prueba.Domain.Services;
 using Prueba.Infrastructure.Persistence;
 using Prueba.Infrastructure.Repositories;
-using Prueba.Application.Reports.CustomerIntervals;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ---------- Controllers ----------
+// Controllers
 builder.Services.AddControllers();
 
-builder.Services.AddScoped<CustomerIntervalsReportService>();
-builder.Services.AddScoped<CustomerIntervalsExcelExporter>();
-
-
-// ---------- AutoMapper (AutoMapper 16) ----------
-builder.Services.AddAutoMapper(cfg =>
-{
-    // Escanea profiles del assembly Application
-    cfg.AddMaps(typeof(Prueba.Application.Orders.OrderMappingProfile).Assembly);
-}, typeof(Prueba.Application.Orders.OrderMappingProfile).Assembly);
-
-// ---------- Swagger ----------
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ---------- FluentValidation ----------
 builder.Services.AddFluentValidationAutoValidation();
-// Asegura el scan de validators en Application
-builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderHandler>();
 
-// ---------- MediatR (CQRS) ----------
+// Registrar validators manualmente (sin extensión)
+builder.Services.AddScoped<FluentValidation.IValidator<Prueba.Application.Orders.CreateOrder.CreateOrderCommand>,
+    Prueba.Application.Orders.CreateOrder.CreateOrderCommandValidator>();
+
+
+// MediatR
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<CreateOrderHandler>());
 
-// ---------- DB (SQL Server) ----------
+// CustomerIntervals (Excel)
+builder.Services.AddScoped<CustomerIntervalsReportService>();
+builder.Services.AddScoped<CustomerIntervalsExcelExporter>();
+
+// DB
 builder.Services.AddDbContext<AppDbContext>(opt =>
 {
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
 });
 
-// ---------- Repositories ----------
+// Repositories
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-// ---------- Domain services ----------
+// Domain services
 builder.Services.AddScoped<IDistanceCalculator, HaversineDistanceCalculator>();
 builder.Services.AddScoped<ICostCalculator, IntervalCostCalculator>();
 
-// ---------- Health checks ----------
-builder.Services.AddHealthChecks();
-
-// ---------- CORS ----------
+// CORS
 builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("Default", p =>
@@ -66,7 +57,7 @@ builder.Services.AddCors(opt =>
 
 var app = builder.Build();
 
-// ---------- Global error handler ----------
+// Global error handler
 app.UseExceptionHandler(errApp =>
 {
     errApp.Run(async context =>
@@ -98,7 +89,6 @@ app.UseSwaggerUI();
 app.UseHttpsRedirection();
 app.UseCors("Default");
 
-app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run();

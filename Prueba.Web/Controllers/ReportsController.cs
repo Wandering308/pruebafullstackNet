@@ -1,58 +1,50 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
-using Prueba.Web.Models;
 
 namespace Prueba.Web.Controllers;
 
-public sealed class ReportsController : Controller
+public class ReportsController : Controller
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public ReportsController(IHttpClientFactory httpClientFactory) => _httpClientFactory = httpClientFactory;
-
-    // GET: /Reports/CustomerIntervals
-    [HttpGet]
-    public async Task<IActionResult> CustomerIntervals()
+    public ReportsController(IHttpClientFactory httpClientFactory)
     {
-        var client = _httpClientFactory.CreateClient("Api");
-
-        try
-        {
-            var resp = await client.GetAsync("/api/reports/customer-intervals");
-            if (!resp.IsSuccessStatusCode)
-            {
-                ViewBag.Error = $"API error: {(int)resp.StatusCode} {resp.ReasonPhrase}";
-                return View(new List<CustomerIntervalsReportVm>());
-            }
-
-            var json = await resp.Content.ReadAsStringAsync();
-            var data = JsonSerializer.Deserialize<List<CustomerIntervalsReportVm>>(json, _jsonOpts) ?? new();
-            return View(data);
-        }
-        catch (Exception ex)
-        {
-            ViewBag.Error = ex.Message;
-            return View(new List<CustomerIntervalsReportVm>());
-        }
+        _httpClientFactory = httpClientFactory;
     }
 
-    // GET: /Reports/CustomerIntervalsExcel
+    // Pantalla del reporte
     [HttpGet]
-    public async Task<IActionResult> CustomerIntervalsExcel()
+    public IActionResult CustomerIntervals()
+    {
+        return View();
+    }
+
+    // Descarga Excel (la Web baja desde la API y devuelve el archivo)
+    [HttpGet]
+    public async Task<IActionResult> CustomerIntervalsExcel(CancellationToken ct)
     {
         var client = _httpClientFactory.CreateClient("Api");
 
-        var resp = await client.GetAsync("/api/reports/customer-intervals/excel");
+        // Endpoint REAL vive en la API:
+        // http://localhost:5000/api/Reports/customer-intervals/excel
+        var resp = await client.GetAsync("api/Reports/customer-intervals/excel", ct);
+
         if (!resp.IsSuccessStatusCode)
-            return BadRequest($"API error: {(int)resp.StatusCode} {resp.ReasonPhrase}");
+        {
+            var msg = $"API error: {(int)resp.StatusCode} {resp.ReasonPhrase}";
+            return Content(msg);
+        }
 
-        var bytes = await resp.Content.ReadAsByteArrayAsync();
+        var bytes = await resp.Content.ReadAsByteArrayAsync(ct);
 
-        return File(
-            bytes,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "customer-intervals-report.xlsx"
-        );
+        var contentType =
+            resp.Content.Headers.ContentType?.ToString()
+            ?? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+        var fileName =
+            resp.Content.Headers.ContentDisposition?.FileNameStar
+            ?? resp.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? $"customer-intervals.xlsx";
+
+        return File(bytes, contentType, fileName);
     }
 }

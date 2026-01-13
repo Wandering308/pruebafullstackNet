@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Prueba.Domain.Entities;
+using Prueba.Domain.ValueObjects;
 
 namespace Prueba.Infrastructure.Persistence;
 
@@ -11,30 +12,30 @@ public sealed class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        var b = modelBuilder.Entity<Order>();
+        base.OnModelCreating(modelBuilder);
 
-        b.ToTable("Orders");
-        b.HasKey(x => x.Id);
+        // Order
+        var order = modelBuilder.Entity<Order>();
+        order.HasKey(x => x.Id);
 
-        b.Property(x => x.Customer).HasMaxLength(200).IsRequired();
-        b.Property(x => x.Product).HasMaxLength(200).IsRequired();
-        b.Property(x => x.Quantity).IsRequired();
+        order.Property(x => x.Customer).IsRequired().HasMaxLength(200);
+        order.Property(x => x.Product).IsRequired().HasMaxLength(200);
+        order.Property(x => x.Quantity).IsRequired();
 
-        // GeoPoint (Origin)
-        b.OwnsOne(x => x.Origin, owned =>
+        order.Property(x => x.DistanceKm).IsRequired();
+        order.Property(x => x.CostUsd).IsRequired();
+
+        // Value Objects como Owned (GeoPoint)
+        order.OwnsOne(x => x.Origin, b =>
         {
-            owned.Property(o => o.Latitude).HasColumnName("OriginLat");
-            owned.Property(o => o.Longitude).HasColumnName("OriginLon");
+            b.Property(p => p.Latitude).HasColumnName("OriginLat").IsRequired();
+            b.Property(p => p.Longitude).HasColumnName("OriginLon").IsRequired();
         });
 
-        // GeoPoint (Destination)
-        b.OwnsOne(x => x.Destination, owned =>
+        order.OwnsOne(x => x.Destination, b =>
         {
-            owned.Property(o => o.Latitude).HasColumnName("DestinationLat");
-            owned.Property(o => o.Longitude).HasColumnName("DestinationLon");
+            b.Property(p => p.Latitude).HasColumnName("DestinationLat").IsRequired();
+            b.Property(p => p.Longitude).HasColumnName("DestinationLon").IsRequired();
         });
-
-        b.Property(x => x.DistanceKm).IsRequired();
-        b.Property(x => x.CostUsd).IsRequired();
     }
 }
