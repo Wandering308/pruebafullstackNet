@@ -9,6 +9,8 @@ using Prueba.Domain.Services;
 using Prueba.Infrastructure.Persistence;
 using Prueba.Infrastructure.Repositories;
 
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------- Controllers ----------
@@ -27,6 +29,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderHandler>();
 // IMPORTANT: registrar desde el handler, NO desde CreateOrderService
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<CreateOrderHandler>());
+
 
 // ---------- DB (SQL Server) ----------
 builder.Services.AddDbContext<AppDbContext>(opt =>
