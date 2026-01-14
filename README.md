@@ -287,3 +287,10 @@ consultar órdenes por customer
 exportar Excel desde API
 
 persistir datos en SQL Server Docker con migraciones EF Core
+
+## Ejecutar pruebas
+
+Desde la raíz del repositorio:
+
+```powershell
+dotnet test .\Prueba.Tests\Prueba.Tests.csproj -v normal
