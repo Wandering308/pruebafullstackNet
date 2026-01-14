@@ -1,46 +1,29 @@
 using MediatR;
-using Prueba.Domain.Entities;
-using Prueba.Domain.Interfaces;
 using Prueba.Domain.Services;
-using Prueba.Domain.ValueObjects;
 
 namespace Prueba.Application.Orders.CreateOrder;
 
 public sealed class CreateOrderHandler : IRequestHandler<CreateOrderCommand, CreateOrderResult>
 {
-    private readonly IOrderRepository _repo;
-    private readonly IDistanceCalculator _distance;
-    private readonly ICostCalculator _cost;
+    private readonly OrderServices _services;
 
-    public CreateOrderHandler(IOrderRepository repo, IDistanceCalculator distance, ICostCalculator cost)
+    public CreateOrderHandler(OrderServices services)
     {
-        _repo = repo;
-        _distance = distance;
-        _cost = cost;
+        _services = services;
     }
 
     public async Task<CreateOrderResult> Handle(CreateOrderCommand request, CancellationToken ct)
     {
-        var origin = new GeoPoint(request.OriginLat, request.OriginLon);
-        var destination = new GeoPoint(request.DestinationLat, request.DestinationLon);
-
-        var distanceKm = _distance.CalculateKm(origin, destination);
-        DistanceRules.EnsureValid(distanceKm);
-
-        var costUsd = _cost.CalculateUsd(distanceKm);
-
-       var order = Order.Create(
+        var order = await _services.CreateOrderAsync(
             request.Customer,
             request.Product,
             request.Quantity,
-            origin,
-            destination,
-            distanceKm,
-            costUsd
+            request.OriginLat,
+            request.OriginLon,
+            request.DestinationLat,
+            request.DestinationLon,
+            ct
         );
-
-
-        await _repo.AddAsync(order, ct);
 
         return new CreateOrderResult(
             order.Id,

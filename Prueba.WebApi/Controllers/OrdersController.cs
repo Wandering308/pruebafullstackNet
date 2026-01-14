@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Prueba.Application.Orders.CreateOrder;
+using Prueba.Application.Orders;                 // CreateOrderCommand
+using Prueba.Application.Orders.CreateOrder;     // CreateOrderResult
 using Prueba.Application.Orders.GetOrdersByCustomer;
 using Prueba.WebApi.Contracts;
 
@@ -23,7 +24,7 @@ public sealed class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CreateOrderResult>> Create(
         [FromBody] CreateOrderRequest request,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
         var cmd = new CreateOrderCommand(
             request.Customer,
@@ -35,18 +36,19 @@ public sealed class OrdersController : ControllerBase
             request.DestinationLon
         );
 
-        var result = await _mediator.Send(cmd, ct);
+        var result = await _mediator.Send(cmd, cancellationToken);
 
-        // 201 Created + body (sin forzar un Get que no corresponde a un recurso único)
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
     // GET: /api/orders?customer=Felipe
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetByCustomer([FromQuery] string customer, CancellationToken ct)
+    public async Task<IActionResult> GetByCustomer(
+        [FromQuery] string customer,
+        CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GetOrdersByCustomerQuery(customer), ct);
+        var result = await _mediator.Send(new GetOrdersByCustomerQuery(customer), cancellationToken);
         return Ok(result);
     }
 }

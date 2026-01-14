@@ -1,6 +1,7 @@
 using MediatR;
+using Prueba.Application.Orders.CreateOrder;
 
-namespace Prueba.Application.Orders.CreateOrder;
+namespace Prueba.Application.Orders;
 
 public sealed record CreateOrderCommand(
     string Customer,

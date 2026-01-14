@@ -1,7 +1,9 @@
+using FluentValidation;
 using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Prueba.Application.Orders;
 using Prueba.Application.Orders.CreateOrder;
 using Prueba.Application.Reports.CustomerIntervals;
 using Prueba.Domain.Interfaces;
@@ -20,10 +22,7 @@ builder.Services.AddSwaggerGen();
 
 // FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
-
-// Registrar validator manualmente (sin extensión AddValidatorsFromAssemblyContaining)
-builder.Services.AddScoped<FluentValidation.IValidator<Prueba.Application.Orders.CreateOrder.CreateOrderCommand>,
-    Prueba.Application.Orders.CreateOrder.CreateOrderCommandValidator>();
+builder.Services.AddScoped<IValidator<CreateOrderCommand>, CreateOrderCommandValidator>();
 
 // MediatR
 builder.Services.AddMediatR(cfg =>
@@ -42,9 +41,12 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 // Repositories
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-// Domain services
+// Domain services (calculadoras)
 builder.Services.AddScoped<IDistanceCalculator, HaversineDistanceCalculator>();
 builder.Services.AddScoped<ICostCalculator, IntervalCostCalculator>();
+
+// ✅ Domain orchestrator service
+builder.Services.AddScoped<OrderServices>();
 
 // CORS
 builder.Services.AddCors(opt =>
@@ -67,7 +69,7 @@ app.UseExceptionHandler(errApp =>
 
         context.Response.ContentType = "application/json";
 
-        if (ex is ArgumentOutOfRangeException or ArgumentException)
+        if (ex is ArgumentOutOfRangeException or ArgumentException or ValidationException)
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             await context.Response.WriteAsJsonAsync(new { error = ex.Message });
@@ -88,12 +90,11 @@ app.UseSwaggerUI();
 
 app.UseCors("Default");
 
-// ✅ FIX: NO redireccionar a HTTPS en Development (para que la Web no falle)
+// ✅ En dev NO redireccionar https (evita que Web falle por http)
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
 
 app.MapControllers();
-
 app.Run();
